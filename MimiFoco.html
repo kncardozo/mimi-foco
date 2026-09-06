@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js" defer></script>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mimi Foco</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%237c3aed'/%3E%3Ccircle cx='256' cy='256' r='151' fill='white'/%3E%3Ccircle cx='256' cy='256' r='135' fill='%23f4f0ff' stroke='%235b21b6' stroke-width='10'/%3E%3Cpath d='M256 161v98l64 41' fill='none' stroke='%235b21b6' stroke-width='22' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='256' cy='256' r='15' fill='%23e74c3c'/%3E%3Cpath d='M205 93h102M224 72h64' fill='none' stroke='white' stroke-width='18' stroke-linecap='round'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%237c3aed'/%3E%3Ccircle cx='256' cy='256' r='151' fill='white'/%3E%3Ccircle cx='256' cy='256' r='135' fill='%23f4f0ff' stroke='%235b21b6' stroke-width='10'/%3E%3Cpath d='M256 161v98l64 41' fill='none' stroke='%235b21b6' stroke-width='22' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='256' cy='256' r='15' fill='%23e74c3c'/%3E%3Cpath d='M205 93h102M224 72h64' fill='none' stroke='white' stroke-width='18' stroke-linecap='round'/%3E%3C/svg%3E">
+    <link rel="manifest" href="site.webmanifest">
+    <meta name="theme-color" content="#7c3aed">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <section id="welcomeScreen" class="welcome-screen" aria-labelledby="welcomeTitle">
+        <h1 id="welcomeTitle">💜 Mimi Foco</h1>
+        <p>Quem vai registrar o próximo ciclo?</p>
+        <div class="person-choice-list">
+            <button class="person-choice" type="button" onclick="enterApp('Kah')">Kah</button>
+            <button class="person-choice" type="button" onclick="enterApp('Mimi')">Mimi</button>
+        </div>
+    </section>
+
+    <div id="appContainer" class="container app-container">
+        <div class="header-row">
+            <div class="header-copy">
+                <h1>💜 Mimi Foco</h1>
+                <p id="currentGreeting" class="current-greeting"></p>
+            </div>
+            <div class="header-actions">
+                <button id="themeToggle" class="icon-button" type="button" aria-label="Ativar modo noturno" title="Ativar modo noturno" onclick="toggleDarkMode()">☾</button>
+                <button class="icon-button" type="button" aria-label="Voltar para a tela inicial" title="Voltar para a tela inicial" onclick="returnToWelcome()">⌂</button>
+            </div>
+        </div>
+
+        <div id="modeIndicator" class="mode-indicator">Foco</div>
+        <div id="timerDisplay" class="timer-display">30:00</div>
+
+        <div class="btn-group">
+            <button id="startBtn" class="btn-start" onclick="toggleTimer()">Iniciar foco</button>
+            <button class="btn-focus" onclick="addFocusCycle(true)">+30 foco</button>
+            <button class="btn-reset" onclick="resetAll()">Zerar tudo</button>
+        </div>
+
+        <div class="banco-horas">
+            Lazer de <span id="currentPersonLabelText">Ninguém</span>: <span id="bancoDisplay">00:00</span>
+            <small id="lastRegistration" class="last-registration"></small>
+        </div>
+
+        <div class="participant-list">
+            <h3>Saldo de lazer por pessoa</h3>
+            <ul id="participantsList"></ul>
+        </div>
+    </div>
+
+    <script src="app.js" defer></script>
+</body>
+</html>

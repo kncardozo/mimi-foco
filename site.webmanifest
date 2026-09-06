@@ -1,0 +1,17 @@
+{
+  "name": "Mimi Foco",
+  "short_name": "Mimi Foco",
+  "description": "Pomodoro de foco e lazer",
+  "start_url": "./MimiFoco.html",
+  "display": "standalone",
+  "background_color": "#f4f6f9",
+  "theme_color": "#7c3aed",
+  "icons": [
+    {
+      "src": "./kahdela-clock.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
