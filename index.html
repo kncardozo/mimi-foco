@@ -14,11 +14,19 @@
 
     <section id="welcomeScreen" class="welcome-screen" aria-labelledby="welcomeTitle">
         <h1 id="welcomeTitle">💜 Mimi Foco</h1>
-        <p>Quem vai registrar o próximo ciclo?</p>
-        <div class="person-choice-list">
-            <button class="person-choice" type="button" onclick="enterApp('Kah')">Kah</button>
-            <button class="person-choice" type="button" onclick="enterApp('Mimi')">Mimi</button>
-        </div>
+        <p>Entre para registrar seus ciclos de foco.</p>
+        <form class="login-form" onsubmit="loginProfile(event)">
+            <label for="loginPerson">Perfil</label>
+            <select id="loginPerson" required>
+                <option value="">Selecione seu perfil</option>
+                <option value="Kah">Kah</option>
+                <option value="Mimi">Mimi</option>
+            </select>
+            <label for="loginPassword">Senha</label>
+            <input id="loginPassword" type="password" autocomplete="current-password" required>
+            <button class="person-choice" type="submit">Entrar</button>
+            <p id="loginError" class="login-error" role="alert"></p>
+        </form>
     </section>
 
     <div id="appContainer" class="container app-container">
@@ -29,6 +37,7 @@
             </div>
             <div class="header-actions">
                 <button id="themeToggle" class="icon-button" type="button" aria-label="Ativar modo noturno" title="Ativar modo noturno" onclick="toggleDarkMode()">☾</button>
+                <button class="icon-button" type="button" aria-label="Alterar senha" title="Alterar senha" onclick="openPasswordDialog()">🔑</button>
                 <button class="icon-button" type="button" aria-label="Voltar para a tela inicial" title="Voltar para a tela inicial" onclick="returnToWelcome()">⌂</button>
             </div>
         </div>
@@ -53,6 +62,21 @@
             <ul id="participantsList"></ul>
         </div>
     </div>
+
+    <dialog id="passwordDialog" class="password-dialog">
+        <form onsubmit="changePassword(event)">
+            <h2>Alterar senha</h2>
+            <label for="newPassword">Nova senha</label>
+            <input id="newPassword" type="password" minlength="8" autocomplete="new-password" required>
+            <label for="confirmPassword">Confirmar nova senha</label>
+            <input id="confirmPassword" type="password" minlength="8" autocomplete="new-password" required>
+            <p id="passwordMessage" class="login-error" role="alert"></p>
+            <div class="dialog-actions">
+                <button type="button" class="btn-reset" onclick="closePasswordDialog()">Cancelar</button>
+                <button type="submit" class="btn-small">Salvar senha</button>
+            </div>
+        </form>
+    </dialog>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js" defer></script>

@@ -3,6 +3,10 @@ const TIME_30_MIN = 30 * 60;
 
 const SUPABASE_URL = 'https://vutatahxfszwfnbjpaqe.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_sW5zcadmG7yWcInb9SCm4g_ltBAIqRn';
+const PROFILE_EMAILS = {
+    Kah: 'kah@mimifoco.app',
+    Mimi: 'mimi@mimifoco.app'
+};
 
 const supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
@@ -17,6 +21,7 @@ let currentPerson = '';
 let registrationTimes = {};
 let darkMode = false;
 let remoteDataLoaded = false;
+let authenticatedUser = null;
 
 const motivationalMessages = [
     'Parabens meu Amorzin! Você é foda',
@@ -89,6 +94,7 @@ async function saveRemoteRecord(timestamp) {
         .from('focus_records')
         .insert({
             person: currentPerson,
+            user_id: authenticatedUser.id,
             minutes: 30,
             entry_type: 'focus',
             registered_at: timestamp
@@ -113,6 +119,7 @@ async function completeLeisure() {
         .from('focus_records')
         .insert({
             person: currentPerson,
+            user_id: authenticatedUser.id,
             minutes: 30,
             entry_type: 'leisure',
             registered_at: timestamp
@@ -142,7 +149,8 @@ async function resetCurrentPerson() {
     const { error } = await supabaseClient
         .from('focus_records')
         .delete()
-        .eq('person', currentPerson);
+        .eq('person', currentPerson)
+        .eq('user_id', authenticatedUser.id);
 
     if (error) {
         alert('Não foi possível apagar os registros na nuvem.\n\n' + error.message);
@@ -180,6 +188,65 @@ function applyTheme() {
     themeToggle.textContent = darkMode ? '☀' : '☾';
     themeToggle.setAttribute('aria-label', label);
     themeToggle.setAttribute('title', label);
+}
+
+async function loginProfile(event) {
+    event.preventDefault();
+    const person = document.getElementById('loginPerson').value;
+    const password = document.getElementById('loginPassword').value;
+    const errorElement = document.getElementById('loginError');
+
+    errorElement.textContent = '';
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: PROFILE_EMAILS[person],
+        password
+    });
+
+    if (error) {
+        errorElement.textContent = 'Perfil ou senha incorretos.';
+        return;
+    }
+
+    authenticatedUser = data.user;
+    currentPerson = person;
+    document.getElementById('loginPassword').value = '';
+    saveToLocalStorage();
+    document.getElementById('welcomeScreen').style.display = 'none';
+    document.getElementById('appContainer').classList.add('ready');
+    updateCurrentPersonUI();
+    await loadRemoteRecords();
+}
+
+function openPasswordDialog() {
+    document.getElementById('passwordMessage').textContent = '';
+    document.getElementById('passwordDialog').showModal();
+}
+
+function closePasswordDialog() {
+    document.getElementById('passwordDialog').close();
+}
+
+async function changePassword(event) {
+    event.preventDefault();
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmation = document.getElementById('confirmPassword').value;
+    const message = document.getElementById('passwordMessage');
+
+    if (newPassword !== confirmation) {
+        message.textContent = 'As senhas não são iguais.';
+        return;
+    }
+
+    const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+    if (error) {
+        message.textContent = error.message;
+        return;
+    }
+
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+    closePasswordDialog();
+    alert('Senha alterada com sucesso.');
 }
 
 function requestNotificationPermission() {
@@ -392,7 +459,9 @@ function showWelcomeScreen() {
         document.getElementById('startBtn').classList.remove('running');
     }
 
+    authenticatedUser = null;
     currentPerson = '';
+    supabaseClient.auth.signOut();
     saveToLocalStorage();
     document.getElementById('appContainer').classList.remove('ready');
     document.getElementById('welcomeScreen').style.display = 'flex';
@@ -429,9 +498,18 @@ function resetAll() {
 document.addEventListener('DOMContentLoaded', () => {
     readStoredData();
     applyTheme();
-    updateCurrentPersonUI();
-    updateParticipantsList();
-    updateDisplay();
-    updateBancoDisplay();
-    loadRemoteRecords();
+    supabaseClient.auth.getSession().then(({ data }) => {
+        authenticatedUser = data.session?.user || null;
+        if (authenticatedUser) {
+            const profile = Object.entries(PROFILE_EMAILS).find(([, email]) => email === authenticatedUser.email)?.[0];
+            currentPerson = profile || '';
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('appContainer').classList.add('ready');
+            updateCurrentPersonUI();
+            updateParticipantsList();
+            updateDisplay();
+            updateBancoDisplay();
+            loadRemoteRecords();
+        }
+    });
 });
