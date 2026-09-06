@@ -1,8 +1,5 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js" defer></script>
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,12 +39,13 @@
         <div class="btn-group">
             <button id="startBtn" class="btn-start" onclick="toggleTimer()">Iniciar foco</button>
             <button class="btn-focus" onclick="addFocusCycle(true)">+30 foco</button>
-            <button class="btn-reset" onclick="resetAll()">Zerar tudo</button>
+            <button class="btn-reset" onclick="resetCurrentPerson()">Zerar meu saldo</button>
         </div>
 
         <div class="banco-horas">
             Lazer de <span id="currentPersonLabelText">Ninguém</span>: <span id="bancoDisplay">00:00</span>
             <small id="lastRegistration" class="last-registration"></small>
+            <button id="completeLeisureBtn" class="complete-leisure" type="button" onclick="completeLeisure()">Marcar lazer cumprido</button>
         </div>
 
         <div class="participant-list">
@@ -56,6 +54,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js" defer></script>
 </body>
 </html>

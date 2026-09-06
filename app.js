@@ -1,8 +1,8 @@
 const STORAGE_KEY = 'pomodoro_balanceado_data';
 const TIME_30_MIN = 30 * 60;
 
-const SUPABASE_URL = 'https://seu-projeto.supabase.co';
-const SUPABASE_ANON_KEY = 'sua-chave-anon';
+const SUPABASE_URL = 'https://vutatahxfszwfnbjpaqe.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_sW5zcadmG7yWcInb9SCm4g_ltBAIqRn';
 
 const supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
@@ -16,6 +16,7 @@ let participants = {};
 let currentPerson = '';
 let registrationTimes = {};
 let darkMode = false;
+let remoteDataLoaded = false;
 
 const motivationalMessages = [
     'Parabens meu Amorzin! Você é foda',
@@ -51,6 +52,109 @@ function saveToLocalStorage() {
         registrationTimes,
         darkMode
     }));
+}
+
+async function loadRemoteRecords() {
+    const { data, error } = await supabaseClient
+        .from('focus_records')
+        .select('person, minutes, entry_type, registered_at')
+        .order('registered_at', { ascending: false });
+
+    if (error) {
+        console.warn('Não foi possível carregar os registros do Supabase:', error.message);
+        return;
+    }
+
+    const remoteParticipants = {};
+    const remoteRegistrationTimes = {};
+
+    data.forEach((record) => {
+        const multiplier = record.entry_type === 'leisure' ? -1 : 1;
+        remoteParticipants[record.person] = (remoteParticipants[record.person] || 0) + (record.minutes * 60 * multiplier);
+        if (record.entry_type !== 'leisure' && !remoteRegistrationTimes[record.person]) {
+            remoteRegistrationTimes[record.person] = record.registered_at;
+        }
+    });
+
+    participants = remoteParticipants;
+    registrationTimes = remoteRegistrationTimes;
+    remoteDataLoaded = true;
+    saveToLocalStorage();
+    updateParticipantsList();
+    updateBancoDisplay();
+}
+
+async function saveRemoteRecord(timestamp) {
+    const { error } = await supabaseClient
+        .from('focus_records')
+        .insert({
+            person: currentPerson,
+            minutes: 30,
+            entry_type: 'focus',
+            registered_at: timestamp
+        });
+
+    if (error) {
+        console.warn('Não foi possível salvar no Supabase:', error.message);
+        alert('O ciclo foi registrado neste aparelho, mas não foi possível sincronizar com a nuvem.');
+        return false;
+    }
+
+    return true;
+}
+
+async function completeLeisure() {
+    if (!currentPerson || getCurrentBalance() < TIME_30_MIN) {
+        return;
+    }
+
+    const timestamp = new Date().toISOString();
+    const { error } = await supabaseClient
+        .from('focus_records')
+        .insert({
+            person: currentPerson,
+            minutes: 30,
+            entry_type: 'leisure',
+            registered_at: timestamp
+        });
+
+    if (error) {
+        alert('Não foi possível marcar o lazer como cumprido.\n\n' + error.message);
+        console.warn('Não foi possível registrar o lazer:', error.message);
+        return;
+    }
+
+    participants[currentPerson] -= TIME_30_MIN;
+    updateBancoDisplay();
+    updateParticipantsList();
+    saveToLocalStorage();
+}
+
+async function resetCurrentPerson() {
+    if (!currentPerson) {
+        alert('Selecione uma pessoa antes de zerar o saldo.');
+        return;
+    }
+
+    const confirmed = confirm(`Tem certeza que deseja apagar todos os registros de ${currentPerson}?`);
+    if (!confirmed) return;
+
+    const { error } = await supabaseClient
+        .from('focus_records')
+        .delete()
+        .eq('person', currentPerson);
+
+    if (error) {
+        alert('Não foi possível apagar os registros na nuvem.\n\n' + error.message);
+        console.warn('Não foi possível zerar o saldo:', error.message);
+        return;
+    }
+
+    participants[currentPerson] = 0;
+    delete registrationTimes[currentPerson];
+    saveToLocalStorage();
+    updateParticipantsList();
+    updateBancoDisplay();
 }
 
 function formatRegistrationTime(timestamp) {
@@ -152,8 +256,8 @@ function selectPerson(nome) {
 
 function updateCurrentPersonUI() {
     document.getElementById('currentPersonLabelText').textContent = currentPerson || 'Ninguém';
-    document.getElementById('currentGreeting').textContent = currentPerson
-        ? `Oi ${currentPerson}, vamos ser produtiva hoje?`
+    document.getElementById('currentGreeting').innerHTML = currentPerson
+        ? `Oi <strong>${currentPerson}</strong>, vamos ser produtiva hoje?`
         : '';
 }
 
@@ -221,7 +325,7 @@ function toggleTimer() {
     }, 1000);
 }
 
-function addFocusCycle(isManual = false) {
+async function addFocusCycle(isManual = false) {
     if (!currentPerson) {
         alert('Selecione uma pessoa antes de registrar o foco.');
         return;
@@ -234,13 +338,15 @@ function addFocusCycle(isManual = false) {
         document.getElementById('startBtn').classList.remove('running');
     }
 
+    const timestamp = new Date().toISOString();
     participants[currentPerson] = (participants[currentPerson] || 0) + TIME_30_MIN;
-    registrationTimes[currentPerson] = new Date().toISOString();
+    registrationTimes[currentPerson] = timestamp;
     timeLeft = TIME_30_MIN;
     updateDisplay();
     updateBancoDisplay();
     updateParticipantsList();
     saveToLocalStorage();
+    await saveRemoteRecord(timestamp);
 
     const message = getMotivationalMessage();
 
@@ -327,4 +433,5 @@ document.addEventListener('DOMContentLoaded', () => {
     updateParticipantsList();
     updateDisplay();
     updateBancoDisplay();
+    loadRemoteRecords();
 });

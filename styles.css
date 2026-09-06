@@ -123,6 +123,11 @@ h1 {
     text-align: left;
 }
 
+.current-greeting strong {
+    color: var(--purple-color);
+    font-weight: 800;
+}
+
 .header-copy {
     flex: 1;
 }
@@ -252,6 +257,16 @@ body.dark-mode .person-input-row select {
 .banco-horas span {
     font-weight: bold;
     color: var(--balance-color);
+}
+
+.complete-leisure {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: var(--purple-color);
+    color: white;
+    font-size: 14px;
 }
 
 .btn-group {
