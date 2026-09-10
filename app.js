@@ -22,7 +22,7 @@ let registrationTimes = {};
 let darkMode = false;
 let remoteDataLoaded = false;
 let authenticatedUser = null;
-let backgroundStartedAt = null;
+let focusDeadline = null;
 
 const motivationalMessages = [
     'Parabens meu Amorzin! Você é foda',
@@ -271,8 +271,13 @@ function notifyFocusComplete(message) {
 }
 
 function stopTimerUI() {
-    clearInterval(timer);
+    if (timer) {
+        clearInterval(timer);
+        timer = null;
+    }
+
     isRunning = false;
+    focusDeadline = null;
     document.getElementById('startBtn').textContent = 'Iniciar foco';
     document.getElementById('startBtn').classList.remove('running');
 }
@@ -280,30 +285,6 @@ function stopTimerUI() {
 function finishFocusCycle() {
     stopTimerUI();
     addFocusCycle(false);
-}
-
-function syncTimerAfterBackground() {
-    if (!isRunning || !backgroundStartedAt) {
-        return;
-    }
-
-    const elapsedSeconds = Math.max(0, Math.floor((Date.now() - backgroundStartedAt) / 1000));
-    if (elapsedSeconds <= 0) {
-        backgroundStartedAt = null;
-        return;
-    }
-
-    timeLeft -= elapsedSeconds;
-    backgroundStartedAt = null;
-
-    if (timeLeft <= 0) {
-        timeLeft = 0;
-        updateDisplay();
-        finishFocusCycle();
-        return;
-    }
-
-    updateDisplay();
 }
 
 function formatTime(totalSeconds) {
@@ -401,10 +382,15 @@ function toggleTimer() {
     }
 
     if (isRunning) {
+        const remainingSeconds = Math.max(0, Math.ceil((focusDeadline - Date.now()) / 1000));
+        timeLeft = remainingSeconds;
         clearInterval(timer);
+        timer = null;
         isRunning = false;
+        focusDeadline = null;
         startBtn.textContent = 'Iniciar foco';
         startBtn.classList.remove('running');
+        updateDisplay();
         return;
     }
 
@@ -413,18 +399,19 @@ function toggleTimer() {
     startBtn.textContent = 'Pausar foco';
     startBtn.classList.add('running');
 
-    timer = setInterval(() => {
-        timeLeft--;
+    focusDeadline = Date.now() + (timeLeft * 1000);
 
-        if (timeLeft <= 0) {
-            timeLeft = 0;
+    timer = setInterval(() => {
+        const remainingSeconds = Math.max(0, Math.ceil((focusDeadline - Date.now()) / 1000));
+        if (remainingSeconds !== timeLeft) {
+            timeLeft = remainingSeconds;
             updateDisplay();
-            finishFocusCycle();
-            return;
         }
 
-        updateDisplay();
-    }, 1000);
+        if (remainingSeconds <= 0) {
+            finishFocusCycle();
+        }
+    }, 250);
 }
 
 async function addFocusCycle(isManual = false) {
@@ -529,29 +516,6 @@ function resetAll() {
     updateDisplay();
     showWelcomeScreen();
 }
-
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden' && isRunning) {
-        backgroundStartedAt = Date.now();
-        return;
-    }
-
-    if (document.visibilityState === 'visible' && backgroundStartedAt) {
-        syncTimerAfterBackground();
-    }
-});
-
-window.addEventListener('blur', () => { 
-    if (isRunning) {
-        backgroundStartedAt = Date.now();
-    }
-});
-
-window.addEventListener('focus', () => {
-    if (isRunning && backgroundStartedAt) {
-        syncTimerAfterBackground();
-    }
-});
 
 document.addEventListener('DOMContentLoaded', () => {
     readStoredData();
