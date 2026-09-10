@@ -22,6 +22,7 @@ let registrationTimes = {};
 let darkMode = false;
 let remoteDataLoaded = false;
 let authenticatedUser = null;
+let backgroundStartedAt = null;
 
 const motivationalMessages = [
     'Parabens meu Amorzin! Você é foda',
@@ -269,6 +270,42 @@ function notifyFocusComplete(message) {
     alert(message);
 }
 
+function stopTimerUI() {
+    clearInterval(timer);
+    isRunning = false;
+    document.getElementById('startBtn').textContent = 'Iniciar foco';
+    document.getElementById('startBtn').classList.remove('running');
+}
+
+function finishFocusCycle() {
+    stopTimerUI();
+    addFocusCycle(false);
+}
+
+function syncTimerAfterBackground() {
+    if (!isRunning || !backgroundStartedAt) {
+        return;
+    }
+
+    const elapsedSeconds = Math.max(0, Math.floor((Date.now() - backgroundStartedAt) / 1000));
+    if (elapsedSeconds <= 0) {
+        backgroundStartedAt = null;
+        return;
+    }
+
+    timeLeft -= elapsedSeconds;
+    backgroundStartedAt = null;
+
+    if (timeLeft <= 0) {
+        timeLeft = 0;
+        updateDisplay();
+        finishFocusCycle();
+        return;
+    }
+
+    updateDisplay();
+}
+
 function formatTime(totalSeconds) {
     if (totalSeconds < 0) totalSeconds = 0;
 
@@ -380,11 +417,9 @@ function toggleTimer() {
         timeLeft--;
 
         if (timeLeft <= 0) {
-            clearInterval(timer);
-            isRunning = false;
-            startBtn.textContent = 'Iniciar foco';
-            startBtn.classList.remove('running');
-            addFocusCycle(false);
+            timeLeft = 0;
+            updateDisplay();
+            finishFocusCycle();
             return;
         }
 
@@ -494,6 +529,29 @@ function resetAll() {
     updateDisplay();
     showWelcomeScreen();
 }
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && isRunning) {
+        backgroundStartedAt = Date.now();
+        return;
+    }
+
+    if (document.visibilityState === 'visible' && backgroundStartedAt) {
+        syncTimerAfterBackground();
+    }
+});
+
+window.addEventListener('blur', () => { 
+    if (isRunning) {
+        backgroundStartedAt = Date.now();
+    }
+});
+
+window.addEventListener('focus', () => {
+    if (isRunning && backgroundStartedAt) {
+        syncTimerAfterBackground();
+    }
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     readStoredData();
